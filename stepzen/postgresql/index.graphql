@@ -1,0 +1,671 @@
+type Location {
+  address: String
+  address_2: String
+  city: String
+  created_at: DateTime!
+  id: ID!
+  land_mark: String
+  postal_code: String
+  state: String
+  user: User @materializer(query: "getUserUsingLocation_user_id_fkey")
+  user_id: ID
+}
+
+type Services {
+  amount: Float
+  completed_date: DateTime
+  created_at: DateTime!
+  company_collected_date: DateTime
+  id: ID!
+  is_completed: Boolean
+  name: String
+  order_number: String
+  paid: Boolean
+  quantity: Float
+  service_state: String
+  total_amount: Float
+  type_of_service: String
+  current_state: String
+  delivered: Boolean
+  company_collected: Boolean
+}
+
+type Subscription {
+  amount: Float
+  created_at: DateTime!
+  expiration_date: DateTime
+  id: ID!
+  no_of_month: Float
+  type_of_payment: String
+  # user: User @materializer(query: "getUserUsingSubscription_user_id_fkey")
+  user_id: ID
+}
+
+type Transactions {
+  amount: Float
+  created_at: DateTime!
+  currency: String
+  id: ID!
+  order_number: String
+  status: String
+  title: String
+  type: String
+  user: User @materializer(query: "getUserUsingTransactions_user_id_fkey")
+  user_id: ID
+}
+
+type User {
+  created_at: DateTime!
+  email: String
+  firstName: String
+  id: ID!
+  is_admin: Boolean
+  lastName: String
+  location: [Location]
+    @materializer(query: "getLocationUsingLocation_user_id_fkey")
+  number: Float
+  subscription: [Subscription]
+    @materializer(query: "getSubscriptionUsingSubscription_user_id_fkey")
+  transactions: [Transactions]
+    @materializer(query: "getTransactionsUsingTransactions_user_id_fkey")
+  user_admin_id: String
+  user_admin_secret: String
+}
+
+"""
+The following queries are just a set of examples of how to access your schema.
+Feel free to modify them or aggregate more.
+"""
+type Query {
+  " Queries for type 'Location' "
+  getLocation(id: ID!): Location
+    @dbquery(
+      type: "postgresql"
+      schema: "public"
+      table: "Location"
+      configuration: "postgresql_config"
+    )
+  getLocationList: [Location]
+    @dbquery(
+      type: "postgresql"
+      schema: "public"
+      table: "Location"
+      configuration: "postgresql_config"
+    )
+    getLocationByUserId(user_id: ID!): [Location]
+      @dbquery(
+          type: "postgresql"
+            schema: "public"
+            query: """
+            select *, "Location".id as id from "Location" where "Location"."user_id" = $1
+            """
+            configuration: "postgresql_config"
+      )
+  getLocationPaginatedList(first: Int, after: Int): [Location]
+    @dbquery(
+      type: "postgresql"
+      schema: "public"
+      query: """
+      SELECT "address", "address_2", "city", "created_at", "id", "land_mark", "postal_code", "state", "user_id" FROM "Location" ORDER BY "id" LIMIT $1 OFFSET $2
+      """
+      configuration: "postgresql_config"
+    )
+  getLocationUsingLocation_user_id_fkey(id: ID!): [Location]
+    @dbquery(
+      type: "postgresql"
+      schema: "public"
+      query: """
+      SELECT "address", "address_2", "city", "created_at", "id", "land_mark", "postal_code", "state", "user_id" FROM "Location" WHERE "user_id" = $1
+      """
+      configuration: "postgresql_config"
+    )
+  " Queries for type 'Services' "
+  getServices(id: ID!): Services
+    @dbquery(
+      type: "postgresql"
+      schema: "public"
+      table: "Services"
+      configuration: "postgresql_config"
+    )
+  getServicesList: [Services]
+    @dbquery(
+      type: "postgresql"
+      schema: "public"
+      table: "Services"
+      configuration: "postgresql_config"
+    )
+    getServicesByOrderNumber(order_number: String!): [Services]
+      @dbquery(
+          type: "postgresql"
+            schema: "public"
+            query: """
+            select *, "Services".id as id from "Services" where "Services"."order_number" = $1 ORDER BY "Services"."created_at" DESC
+            """
+            configuration: "postgresql_config"
+      )
+    getAllUserServicesByUser_id(user_id: ID!): [Services]
+      @dbquery(
+        type: "postgresql"
+        schema: "public"
+        query: """
+        SELECT s.*
+        FROM "Services" s
+        JOIN "Transactions" t ON s.order_number = t.order_number
+        WHERE t.user_id = $1
+        """
+        configuration: "postgresql_config"
+      )
+    getAllUserServicesByUser_idAndIsCompleted(user_id: ID!, is_completed: Boolean!): [Services]
+    @dbquery(
+      type: "postgresql"
+      schema: "public"
+      query: """
+      SELECT s.*
+      FROM "Services" s
+      JOIN "Transactions" t ON s.order_number = t.order_number
+      WHERE t.user_id = $1 AND s.is_completed = $2 ORDER BY s.created_at DESC
+      """
+      configuration: "postgresql_config"
+    )
+  getServicesPaginatedList(first: Int, after: Int): [Services]
+    @dbquery(
+      type: "postgresql"
+      schema: "public"
+      query: """
+      SELECT "amount", "completed_date", "created_at", "id", "is_completed", "name",  "order_number", "paid", "quantity", "service_state", "total_amount", "type_of_service", "company_collected", "delivered", "company_collected_date", "current_state" FROM "Services" ORDER BY "id" LIMIT $1 OFFSET $2
+      """
+      configuration: "postgresql_config"
+    )
+  " Queries for type 'Subscription' "
+  getSubscription(id: ID!): Subscription
+    @dbquery(
+      type: "postgresql"
+      schema: "public"
+      table: "Subscription"
+      configuration: "postgresql_config"
+    )
+  getSubscriptionList: [Subscription]
+    @dbquery(
+      type: "postgresql"
+      schema: "public"
+      table: "Subscription"
+      configuration: "postgresql_config"
+    )
+  getSubscriptionPaginatedList(first: Int, after: Int): [Subscription]
+    @dbquery(
+      type: "postgresql"
+      schema: "public"
+      query: """
+      SELECT "amount", "created_at", "expiration_date", "id", "no_of_month", "type_of_payment", "user_id" FROM "Subscription" ORDER BY "id" LIMIT $1 OFFSET $2
+      """
+      configuration: "postgresql_config"
+    )
+  getSubscriptionUsingSubscription_user_id_fkey(id: ID!): [Subscription]
+    @dbquery(
+      type: "postgresql"
+      schema: "public"
+      query: """
+      SELECT "amount", "created_at", "expiration_date", "id", "no_of_month", "type_of_payment", "user_id" FROM "Subscription" WHERE "user_id" = $1
+      """
+      configuration: "postgresql_config"
+    )
+  " Queries for type 'Transactions' "
+  getTransactions(id: ID!): Transactions
+    @dbquery(
+      type: "postgresql"
+      schema: "public"
+      table: "Transactions"
+      configuration: "postgresql_config"
+    )
+  getTransactionsList: [Transactions]
+    @dbquery(
+      type: "postgresql"
+      schema: "public"
+      table: "Transactions"
+      configuration: "postgresql_config"
+    )
+  getTransactionsPaginatedList(first: Int, after: Int): [Transactions]
+    @dbquery(
+      type: "postgresql"
+      schema: "public"
+      query: """
+      SELECT "amount", "created_at", "currency", "id", "order_number", "status", "title", "type", "user_id" FROM "Transactions" ORDER BY "id" LIMIT $1 OFFSET $2
+      """
+      configuration: "postgresql_config"
+    )
+  getTransactionsUsingTransactions_user_id_fkey(id: ID!): [Transactions]
+    @dbquery(
+      type: "postgresql"
+      schema: "public"
+      query: """
+      SELECT "amount", "created_at", "currency", "id", "order_number", "status", "title", "type", "user_id" FROM "Transactions" WHERE "user_id" = $1
+      """
+      configuration: "postgresql_config"
+    )
+  " Queries for type 'User' "
+  getUser(id: ID!): User
+    @dbquery(
+      type: "postgresql"
+      schema: "public"
+      table: "User"
+      configuration: "postgresql_config"
+    )
+  getUserList: [User]
+    @dbquery(
+      type: "postgresql"
+      schema: "public"
+      table: "User"
+      configuration: "postgresql_config"
+    )
+  getUserByNumber(number: Float!): [User]
+    @dbquery(
+        type: "postgresql"
+          schema: "public"
+          query: """
+          select *, "User".id as id from "User" where "User"."number" = $1
+          """
+          configuration: "postgresql_config"
+    )
+  getUserById(user_id: ID!): [User]
+    @dbquery(
+        type: "postgresql"
+          schema: "public"
+          query: """
+          select *, "User".id as id from "User" where "User"."id" = $1
+          """
+          configuration: "postgresql_config"
+    )
+  getUserPaginatedList(first: Int, after: Int): [User]
+    @dbquery(
+      type: "postgresql"
+      schema: "public"
+      query: """
+      SELECT "created_at", "email", "firstName", "id", "is_admin", "lastName", "number", "user_admin_id", "user_admin_secret" FROM "User" ORDER BY "id" LIMIT $1 OFFSET $2
+      """
+      configuration: "postgresql_config"
+    )
+  getUserUsingLocation_user_id_fkey(user_id: ID!): User
+    @dbquery(
+      type: "postgresql"
+      schema: "public"
+      query: """
+      SELECT "created_at", "email", "firstName", "id", "is_admin", "lastName", "number", "user_admin_id", "user_admin_secret" FROM "User" WHERE "id" = $1
+      """
+      configuration: "postgresql_config"
+    )
+  getUserUsingSubscription_user_id_fkey(user_id: ID!): User
+    @dbquery(
+      type: "postgresql"
+      schema: "public"
+      query: """
+      SELECT "created_at", "email", "firstName", "id", "is_admin", "lastName", "number", "user_admin_id", "user_admin_secret" FROM "User" WHERE "id" = $1
+      """
+      configuration: "postgresql_config"
+    )
+  getUserUsingTransactions_user_id_fkey(user_id: ID!): User
+    @dbquery(
+      type: "postgresql"
+      schema: "public"
+      query: """
+      SELECT "created_at", "email", "firstName", "id",  "is_admin", "lastName", "number", "user_admin_id", "user_admin_secret" FROM "User" WHERE "id" = $1
+      """
+      configuration: "postgresql_config"
+    )
+}
+
+"""
+The following mutations are just a set of examples of how to access your schema.
+Feel free to modify them or aggregate more.
+"""
+type Mutation {
+  " Mutations for type 'Location' "
+    deleteLocation(id: ID!): Location
+      @dbquery(
+          type: "postgresql"
+            schema: "public"
+            table: "Location"
+            dml: DELETE
+            configuration: "postgresql_config"
+      )
+    insertLocation(
+        city: String
+        state: String
+        user_id: ID
+        postal_code: String
+        address: String
+        address_2: String
+        land_mark: String
+        created_at: DateTime!
+    ): Location
+      @dbquery(
+          type: "postgresql"
+            schema: "public"
+            table: "Location"
+            dml: INSERT
+            configuration: "postgresql_config"
+      )
+    updateLocation(
+        address: String
+        address_2: String
+        city: String
+        created_at: DateTime
+        postal_code: String
+        state: String
+        user_id: ID
+    ): Location
+      @dbquery(
+          type: "postgresql"
+            schema: "public"
+            query: """
+            UPDATE "Location" SET
+              "address" = COALESCE($2, "address"),
+          "city" = COALESCE($3, "city"),
+          "created_at" = COALESCE($4, "created_at"),
+          "postal_code" = COALESCE($5, "postal_code"),
+          "state" = COALESCE($6, "state"),
+          "user_id" = COALESCE($7, "user_id")
+              "address_2" = COALESCE($8, "address_2")
+            WHERE
+              "id" = $1
+            RETURNING *
+          """
+            configuration: "postgresql_config"
+      )
+
+  " Mutations for type 'Services' "
+    deleteServices(id: ID!): Services
+      @dbquery(
+          type: "postgresql"
+            schema: "public"
+            table: "Services"
+            dml: DELETE
+            configuration: "postgresql_config"
+      )
+    insertServices(
+        service_state: String
+        is_completed: Boolean
+        paid: Boolean
+        completed_date: DateTime
+        company_collected_date: DateTime
+        created_at: DateTime!
+        type_of_service: String
+        total_amount: Float
+        name: String
+        quantity: Float
+        order_number: String
+        amount: Float
+        current_state: String
+        delivered: Boolean
+        company_collected: Boolean
+    ): Services
+      @dbquery(
+          type: "postgresql"
+            schema: "public"
+            table: "Services"
+            dml: INSERT
+            configuration: "postgresql_config"
+      )
+    updateServices(
+        id: ID!
+        amount: Float
+        completed_date: DateTime
+        company_collected_date: DateTime
+        created_at: DateTime
+        is_completed: Boolean
+        name: String
+        order_number: String
+        paid: Boolean
+        quantity: Float
+        service_state: String
+        total_amount: Float
+        type_of_service: String
+        user_id: ID
+        current_state: String
+        delivered: Boolean
+        company_collected: Boolean
+    ): Services
+      @dbquery(
+          type: "postgresql"
+            schema: "public"
+            query: """
+            UPDATE "Services" SET
+              "amount" = COALESCE($2, "amount"),
+              "completed_date" = COALESCE($3, "completed_date"),
+              "company_collected_date" = COALESCE($4, "company_collected_date"),
+              "created_at" = COALESCE($5, "created_at"),
+              "is_completed" = COALESCE($6, "is_completed"),
+              "name" = COALESCE($7, "name"),
+              "order_number" = COALESCE($8, "order_number"),
+              "paid" = COALESCE($9, "paid"),
+              "quantity" = COALESCE($10, "quantity"),
+              "service_state" = COALESCE($11, "service_state"),
+              "total_amount" = COALESCE($12, "total_amount"),
+              "type_of_service" = COALESCE($13, "type_of_service"),
+              "current_state" = COALESCE($14, "current_state")
+              "delivered" = COALESCE($15, "delivered")
+              "company_collected" = COALESCE($16, "company_collected")
+            WHERE
+              "id" = $1
+            RETURNING *
+          """
+            configuration: "postgresql_config"
+      )
+    updateServicesQuantity(
+        id: ID!
+        quantity: Float! 
+        total_amount: Float!
+    ): Services
+      @dbquery(
+          type: "postgresql"
+            schema: "public"
+            query: """
+            UPDATE "Services" SET
+              "quantity" = COALESCE($2, "quantity"),
+              "total_amount" = COALESCE($3, "total_amount")
+                WHERE
+                  "id" = $1
+                RETURNING *
+              """
+            configuration: "postgresql_config"
+      )
+    updateServicesPaid(
+        id: ID!
+        paid: Boolean
+    ): Services
+      @dbquery(
+          type: "postgresql"
+            schema: "public"
+            query: """
+            UPDATE "Services" SET
+              "paid" = COALESCE($2, "paid")
+            WHERE
+              "id" = $1
+            RETURNING *
+          """
+            configuration: "postgresql_config"
+      )
+      updateIsCollectedServices(
+        id: ID!
+        current_state: String
+        delivered: Boolean
+        completed_date: DateTime
+        is_completed: Boolean
+    ): Services
+      @dbquery(
+          type: "postgresql"
+            schema: "public"
+            query: """
+            UPDATE "Services" SET
+              "current_state" = COALESCE($2, "current_state"),
+              "delivered" = COALESCE($3, "delivered"),
+              "completed_date" = COALESCE($4, "completed_date"),
+              "is_completed" = COALESCE($5, "is_completed")
+            WHERE
+              "id" = $1
+            RETURNING *
+          """
+            configuration: "postgresql_config"
+      )
+  " Mutations for type 'Subscription' "
+  deleteSubscription(id: ID!): Subscription
+    @dbquery(
+      type: "postgresql"
+      schema: "public"
+      table: "Subscription"
+      dml: DELETE
+      configuration: "postgresql_config"
+    )
+  insertSubscription(
+    expiration_date: DateTime
+    type_of_payment: String
+    id: ID!
+    created_at: DateTime!
+    no_of_month: Float
+    user_id: ID
+    amount: Float
+  ): Subscription
+    @dbquery(
+      type: "postgresql"
+      schema: "public"
+      table: "Subscription"
+      dml: INSERT
+      configuration: "postgresql_config"
+    )
+  updateSubscription(
+    id: ID!
+    amount: Float
+    created_at: DateTime
+    expiration_date: DateTime
+    no_of_month: Float
+    type_of_payment: String
+    user_id: ID
+  ): Subscription
+    @dbquery(
+      type: "postgresql"
+      schema: "public"
+      query: """
+      UPDATE "Subscription" SET
+        "amount" = COALESCE($2, "amount"),
+        "created_at" = COALESCE($3, "created_at"),
+        "expiration_date" = COALESCE($4, "expiration_date"),
+        "no_of_month" = COALESCE($5, "no_of_month"),
+        "type_of_payment" = COALESCE($6, "type_of_payment"),
+        "user_id" = COALESCE($7, "user_id")
+      WHERE
+        "id" = $1
+      RETURNING *
+      """
+      configuration: "postgresql_config"
+    )
+  " Mutations for type 'Transactions' "
+  deleteTransactions(id: ID!): Transactions
+    @dbquery(
+      type: "postgresql"
+      schema: "public"
+      table: "Transactions"
+      dml: DELETE
+      configuration: "postgresql_config"
+    )
+  insertTransactions(
+    order_number: String
+    status: String
+    currency: String
+    created_at: DateTime!
+    user_id: ID
+    amount: Float
+    title: String
+    type: String
+  ): Transactions
+    @dbquery(
+      type: "postgresql"
+      schema: "public"
+      table: "Transactions"
+      dml: INSERT
+      configuration: "postgresql_config"
+    )
+  updateTransactions(
+    id: ID!
+    amount: Float
+    created_at: DateTime
+    currency: String
+    order_number: String
+    status: String
+    title: String
+    type: String
+    user_id: ID
+  ): Transactions
+    @dbquery(
+      type: "postgresql"
+      schema: "public"
+      query: """
+      UPDATE "Transactions" SET
+        "amount" = COALESCE($2, "amount"),
+        "created_at" = COALESCE($3, "created_at"),
+        "currency" = COALESCE($4, "currency"),
+        "order_number" = COALESCE($5, "order_number"),
+        "status" = COALESCE($6, "status"),
+        "title" = COALESCE($7, "title"),
+        "type" = COALESCE($8, "type"),
+        "user_id" = COALESCE($9, "user_id")
+      WHERE
+        "id" = $1
+      RETURNING *
+      """
+      configuration: "postgresql_config"
+    )
+  " Mutations for type 'User' "
+  deleteUser(id: ID!): User
+    @dbquery(
+      type: "postgresql"
+      schema: "public"
+      table: "User"
+      dml: DELETE
+      configuration: "postgresql_config"
+    )
+  insertUser(
+    number: Float
+    email: String
+    lastName: String
+    created_at: DateTime!
+    firstName: String
+    is_admin: Boolean 
+    id: ID!
+    user_admin_id: String
+    user_admin_secret: String
+  ): User
+    @dbquery(
+      type: "postgresql"
+      schema: "public"
+      table: "User"
+      dml: INSERT
+      configuration: "postgresql_config"
+    )
+  updateUser(
+    id: ID!
+    is_admin: Boolean!
+    created_at: DateTime
+    email: String
+    firstName: String
+    lastName: String
+    number: Float
+    user_admin_id: String
+    user_admin_secret: String
+  ): User
+    @dbquery(
+      type: "postgresql"
+      schema: "public"
+      query: """
+      UPDATE "User" SET
+        "created_at" = COALESCE($2, "created_at"),
+        "email" = COALESCE($3, "email"),
+        "firstName" = COALESCE($4, "firstName"),
+        "lastName" = COALESCE($5, "lastName"),
+        "number" = COALESCE($6, "number")
+        "is_admin" = COALESCE($7, "is_admin")
+      WHERE
+        "id" = $1
+      RETURNING *
+      """
+      configuration: "postgresql_config"
+    )
+}
